@@ -1,0 +1,9 @@
+#!/bin/bash
+
+pushd ~/deepx_runtime/dx_app
+
+sudo pcie_rescan.sh
+
+./bin/run_detector -c sample/yolov7_example.json
+
+popd

@@ -1,0 +1,39 @@
+#!/bin/bash
+
+pushd ~/deepx_runtime/dx_rt
+
+default_repeat=1
+
+repeat=${1:-$default_repeat}
+
+echo "::: Stress Run Test :::"
+
+
+sudo pcie_rescan.sh 2>&1 1>/dev/null
+sleep 0.5
+
+if [ $? -ne 0 ]; then
+    echo "fail - pcie"
+    exit 1
+fi
+
+
+for ((i=1; i<=repeat; i++))
+do
+    echo "Repeats: $i / $repeat"
+    date +"%m/%d/%Y %I:%M:%S %p"
+
+    sudo ./bin/run_model -m /models/m1a/1876/YOLOV5X_2/YOLOV5X_2.dxnn -l 1000 -b | strings | grep FPS
+#    sudo ./bin/run_model -m /models/m1a/1780_local/YOLOv7/YOLOv7.dxnn -l 1000 -b | strings | grep FPS
+
+    if [ $? -ne 0 ]; then
+        echo "fail - model"
+        exit 1
+    fi
+
+    #temperature=$(dxrt-cli -s | grep -oP 'temperature \K[0-9]+' | sed -n '1p')
+    #echo $temperature
+
+done
+
+popd

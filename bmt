@@ -1,0 +1,21 @@
+#!/bin/bash
+
+DEFAULT_MODEL=2005
+
+
+pushd ~/deepx_runtime/rt_npu_validation
+
+sudo pcie_rescan.sh
+
+#python python_package/examples/npu_bit_match.py --reg_f /models/m1a/1876 --log m1a_test.log
+
+regr_model="${1:-$DEFAULT_MODEL}"
+
+
+mkdir -p /models/m1a/${regr_model}
+mkdir -p /mnt/regression
+
+sudo mount -t nfs -o nolock 192.168.30.201:/do/regression /mnt/regression
+python python_package/examples/npu_bit_match.py --reg_f /mnt/regression/dxnn_regr_data/M1A/${regr_model} --rt_dir /models/m1a/${regr_model} --log m1a_test.log
+
+popd

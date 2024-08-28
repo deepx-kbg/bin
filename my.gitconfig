@@ -1,0 +1,17 @@
+[user]
+    email = kbg@deepx.ai
+    name = bongyu Koo
+[color]
+    ui = auto
+[core]
+    editor = vim
+	symlinks = true
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+[safe]
+	directory = /home/kbg/soc33/soc_rtl_m1a_new
+[submodule]
+	recurse = true

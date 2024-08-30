@@ -1,0 +1,29 @@
+
+
+$ sudo apt update
+$ sudo apt install x11vnc
+$ sudo vi /etc/systemd/system/x11vnc.service
+$ sudo systemctl daemon-reload
+$ sudo systemctl enable x11vnc
+$ sudo systemctl start x11vnc
+$ sudo systemctl status x11vnc
+
+$ sudo vi /etc/systemd/system/x11vnc.service
+-------------------------------------------------------------------------------
+[Unit]
+Description=Start x11vnc server at startup
+After=display-manager.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/x11vnc -forever -rfbport 5900 -shared
+User=kbg
+Group=kbg
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+--------------------------------------------------------------------------------
+
+local에서 실행 시 : x11vnc -display :0
+remote에서 실행 시 : ssh user@host -L 5900:localhost:5900 "x11vnc -display :0 -noxdamage"

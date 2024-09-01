@@ -1,17 +1,13 @@
-obj-m += a.o
+SRC_DIR := dkms/source/dx-module-a/dx-module-a-1.0
 
-INSTALL_DIR := /lib/modules/$(shell uname -r)/build
-
-SYM_DIR := $(INSTALL_DIR)/include/generated
-
-B_SYM_VERS := $(SYM_DIR)/Module_b.symvers
-
-# Specify extra symbols directory
-KBUILD_EXTRA_SYMBOLS := $(B_SYM_VERS)
-
-# Build target
 all:
-	make -C $(INSTALL_DIR) M=$(PWD) modules
+	$(MAKE) -C $(SRC_DIR) all
+
+install:
+	$(MAKE) -C $(SRC_DIR) install
+
+uninstall:
+	$(MAKE) -C $(SRC_DIR) uninstall
 
 clean:
-	make -C $(INSTALL_DIR) M=$(PWD) clean
+	$(MAKE) -C $(SRC_DIR) clean

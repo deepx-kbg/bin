@@ -25,4 +25,4 @@ module_exit(a_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("KOO Bongyu <kbg@deepx.ai>");
-MODULE_DESCRIPTION("Module B");
+MODULE_DESCRIPTION("DeepX module A");

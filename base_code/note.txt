@@ -28,6 +28,16 @@ $ make
 $ sudo insmod a.ko
 
 
+$ export DESTDIR=/tmp/dx-module-a-1.0
+$ fakeroot dpkg-buildpackage -us -uc
+
+$ export DESTDIR=/tmp/dx-module-b-1.0
+$ fakeroot dpkg-buildpackage -us -uc
+
+
+
+
+
 
 
 ---------------------------------------------------------------------------------------------------------

@@ -1,19 +1,13 @@
-obj-m += b.o
+SRC_DIR := dkms/source/dx-module-b/dx-module-b-1.0
 
-INSTALL_DIR := /lib/modules/$(shell uname -r)/build
+all:
+	$(MAKE) -C $(SRC_DIR) all
 
-SYM_DIR := $(INSTALL_DIR)/include/generated
-B_SYM_VERS := $(SYM_DIR)/Module_b.symvers
+install:
+	$(MAKE) -C $(SRC_DIR) install
 
-all: modules
-
-modules:
-	make -C $(INSTALL_DIR) M=$(shell pwd) modules
-
-install: modules
-	make -C $(INSTALL_DIR) M=$(shell pwd) modules_install
-
-	cp Module.symvers $(B_SYM_VERS)
+uninstall:
+	$(MAKE) -C $(SRC_DIR) uninstall
 
 clean:
-	make -C $(INSTALL_DIR) M=$(shell pwd) clean
+	$(MAKE) -C $(SRC_DIR) clean

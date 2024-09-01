@@ -1,0 +1,17 @@
+#!/usr/bin/make -f
+
+export DEB_BUILD_OPTIONS = fakeroot
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	$(MAKE) -C dkms/source/dx-module-a/dx-module-a-1.0
+
+override_dh_auto_install:
+	mkdir -p $(DESTDIR)/usr/src/dx-module-a-1.0
+
+	$(MAKE) -C dkms/source/dx-module-a/dx-module-a-1.0 clean
+	$(MAKE) -C dkms/source/dx-module-a/dx-module-a-1.0 install DESTDIR=$(DESTDIR)
+
+	cp -rf dkms/source/dx-module-a/dx-module-a-1.0/* $(DESTDIR)/usr/src/dx-module-a-1.0

@@ -1,0 +1,7 @@
+dx-module-b (1.0-1) unstable; urgency=medium
+
+  * Initial release of dx-module-b.
+  * Includes basic kernel module functionalities.
+  * Configured for DKMS integration.
+
+ -- KOO Bongyu <kbg@deepx.ai>  Sat, 01 Sep 2024 12:00:00 +0000

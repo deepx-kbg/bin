@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+
+dkms add dx-module-b/1.0
+
+dkms build dx-module-b/1.0
+dkms install dx-module-b/1.0
+
+exit 0

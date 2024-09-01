@@ -1,0 +1,13 @@
+Source: dx-module-b
+Section: kernel
+Priority: optional
+Maintainer: KOO Bongyu <kbg@deepx.ai>
+Build-Depends: debhelper (>= 12)
+Standards-Version: 4.5.0
+Homepage: http://example.com
+
+Package: dx-module-b
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, dkms
+Description: Example kernel module B
+ Module B is an example kernel module.

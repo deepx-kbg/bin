@@ -1,3 +1,6 @@
 $ echo kernel.dmesg_restrict = 0 | sudo tee -a /etc/sysctl.d/10-local.conf >/dev/null
-$ cat /etc/sysctl.d/10-local.conf 
+
+sudo sysctl -w kernel.dmesg_restrict=0
+
+$ cat >> /etc/sysctl.conf
 kernel.dmesg_restrict = 0

@@ -1,0 +1,69 @@
+module b
+module a -> call b module function
+
+1) EXPORT_SYMBOL() in module b
+2) function prototype in module a
+3) define KBUILD_EXTRA_SYMBOLS in a's Makefile
+
+
+INSTALL_DIR := /lib/modules/$(shell uname -r)/build
+
+SYM_DIR := $(INSTALL_DIR)/include/generated
+
+B_SYM_VERS = $(SYM_DIR)/Module_b.symvers
+
+# Specify extra symbols directory
+KBUILD_EXTRA_SYMBOLS := $(B_SYM_VERS)
+
+
+
+
+// build module b, first
+$ cd b
+$ make
+$ sudo insmod b.ko
+
+$ cd a
+$ make
+$ sudo insmod a.ko
+
+
+
+
+---------------------------------------------------------------------------------------------------------
+
+$ make
+make -C /lib/modules/6.8.0-41-generic/build M=/home/kbg/tz/a V=1 modules
+make[1]: 디렉터리 '/usr/src/linux-headers-6.8.0-41-generic' 들어감
+make --no-print-directory -C /usr/src/linux-headers-6.8.0-41-generic \
+-f /usr/src/linux-headers-6.8.0-41-generic/Makefile modules
+warning: the compiler differs from the one used to build the kernel
+  The kernel was built by: x86_64-linux-gnu-gcc-13 (Ubuntu 13.2.0-23ubuntu4) 13.2.0
+  You are using:           gcc-13 (Ubuntu 13.2.0-23ubuntu4) 13.2.0
+make -f ./scripts/Makefile.build obj=/home/kbg/tz/a need-builtin=1 need-modorder=1
+# CC [M]  /home/kbg/tz/a/a.o
+  gcc-13 -Wp,-MMD,/home/kbg/tz/a/.a.o.d -nostdinc -I./arch/x86/include -I./arch/x86/include/generated  -I./include -I./arch/x86/include/uapi -I./arch/x86/include/generated/uapi -I./include/uapi -I./include/generated/uapi -include ./include/linux/compiler-version.h -include ./include/linux/kconfig.h -I./ubuntu/include -include ./include/linux/compiler_types.h -D__KERNEL__ -fmacro-prefix-map=./= -std=gnu11 -fshort-wchar -funsigned-char -fno-common -fno-PIE -fno-strict-aliasing -mno-sse -mno-mmx -mno-sse2 -mno-3dnow -mno-avx -fcf-protection=none -m64 -falign-jumps=1 -falign-loops=1 -mno-80387 -mno-fp-ret-in-387 -mpreferred-stack-boundary=3 -mskip-rax-setup -mtune=generic -mno-red-zone -mcmodel=kernel -Wno-sign-compare -fno-asynchronous-unwind-tables -mindirect-branch=thunk-extern -mindirect-branch-register -mindirect-branch-cs-prefix -mfunction-return=thunk-extern -fno-jump-tables -mharden-sls=all -fpatchable-function-entry=16,16 -fno-delete-null-pointer-checks -O2 -fno-allow-store-data-races -fstack-protector-strong -fno-omit-frame-pointer -fno-optimize-sibling-calls -ftrivial-auto-var-init=zero -fno-stack-clash-protection -fzero-call-used-regs=used-gpr -pg -mrecord-mcount -mfentry -DCC_USING_FENTRY -falign-functions=16 -fstrict-flex-arrays=3 -fno-strict-overflow -fno-stack-check -fconserve-stack -Wall -Wundef -Werror=implicit-function-declaration -Werror=implicit-int -Werror=return-type -Werror=strict-prototypes -Wno-format-security -Wno-trigraphs -Wno-frame-address -Wno-address-of-packed-member -Wmissing-declarations -Wmissing-prototypes -Wframe-larger-than=1024 -Wno-main -Wno-unused-but-set-variable -Wno-unused-const-variable -Wno-dangling-pointer -Wvla -Wno-pointer-sign -Wcast-function-type -Wno-stringop-overflow -Wno-array-bounds -Wno-alloc-size-larger-than -Wimplicit-fallthrough=5 -Werror=date-time -Werror=incompatible-pointer-types -Werror=designated-init -Wenum-conversion -Wno-unused-but-set-variable -Wno-unused-const-variable -Wno-restrict -Wno-packed-not-aligned -Wno-format-overflow -Wno-format-truncation -Wno-stringop-truncation -Wno-override-init -Wno-missing-field-initializers -Wno-type-limits -Wno-shift-negative-value -Wno-maybe-uninitialized -Wno-sign-compare -g -gdwarf-5  -fsanitize=bounds-strict -fsanitize=shift -fsanitize=bool -fsanitize=enum  -DMODULE  -DKBUILD_BASENAME='"a"' -DKBUILD_MODNAME='"a"' -D__KBUILD_MODNAME=kmod_a -c -o /home/kbg/tz/a/a.o /home/kbg/tz/a/a.c   ; ./tools/objtool/objtool --hacks=jump_label --hacks=noinstr --hacks=skylake --retpoline --rethunk --sls --stackval --static-call --uaccess --prefix=16   --module /home/kbg/tz/a/a.o
+# cmd_gen_objtooldep /home/kbg/tz/a/a.o
+   { echo ; echo '/home/kbg/tz/a/a.o: $(wildcard ./tools/objtool/objtool)' ; } >> /home/kbg/tz/a/.a.o.cmd
+# cmd_gen_symversions_c /home/kbg/tz/a/a.o
+  if nm /home/kbg/tz/a/a.o 2>/dev/null | grep -q ' __export_symbol_'; then gcc-13 -E -D__GENKSYMS__ -Wp,-MMD,/home/kbg/tz/a/.a.o.d -nostdinc -I./arch/x86/include -I./arch/x86/include/generated  -I./include -I./arch/x86/include/uapi -I./arch/x86/include/generated/uapi -I./include/uapi -I./include/generated/uapi -include ./include/linux/compiler-version.h -include ./include/linux/kconfig.h -I./ubuntu/include -include ./include/linux/compiler_types.h -D__KERNEL__ -fmacro-prefix-map=./= -std=gnu11 -fshort-wchar -funsigned-char -fno-common -fno-PIE -fno-strict-aliasing -mno-sse -mno-mmx -mno-sse2 -mno-3dnow -mno-avx -fcf-protection=none -m64 -falign-jumps=1 -falign-loops=1 -mno-80387 -mno-fp-ret-in-387 -mpreferred-stack-boundary=3 -mskip-rax-setup -mtune=generic -mno-red-zone -mcmodel=kernel -Wno-sign-compare -fno-asynchronous-unwind-tables -mindirect-branch=thunk-extern -mindirect-branch-register -mindirect-branch-cs-prefix -mfunction-return=thunk-extern -fno-jump-tables -mharden-sls=all -fpatchable-function-entry=16,16 -fno-delete-null-pointer-checks -O2 -fno-allow-store-data-races -fstack-protector-strong -fno-omit-frame-pointer -fno-optimize-sibling-calls -ftrivial-auto-var-init=zero -fno-stack-clash-protection -fzero-call-used-regs=used-gpr -pg -mrecord-mcount -mfentry -DCC_USING_FENTRY -falign-functions=16 -fstrict-flex-arrays=3 -fno-strict-overflow -fno-stack-check -fconserve-stack -Wall -Wundef -Werror=implicit-function-declaration -Werror=implicit-int -Werror=return-type -Werror=strict-prototypes -Wno-format-security -Wno-trigraphs -Wno-frame-address -Wno-address-of-packed-member -Wmissing-declarations -Wmissing-prototypes -Wframe-larger-than=1024 -Wno-main -Wno-unused-but-set-variable -Wno-unused-const-variable -Wno-dangling-pointer -Wvla -Wno-pointer-sign -Wcast-function-type -Wno-stringop-overflow -Wno-array-bounds -Wno-alloc-size-larger-than -Wimplicit-fallthrough=5 -Werror=date-time -Werror=incompatible-pointer-types -Werror=designated-init -Wenum-conversion -Wno-unused-but-set-variable -Wno-unused-const-variable -Wno-restrict -Wno-packed-not-aligned -Wno-format-overflow -Wno-format-truncation -Wno-stringop-truncation -Wno-override-init -Wno-missing-field-initializers -Wno-type-limits -Wno-shift-negative-value -Wno-maybe-uninitialized -Wno-sign-compare -g -gdwarf-5  -fsanitize=bounds-strict -fsanitize=shift -fsanitize=bool -fsanitize=enum  -DMODULE  -DKBUILD_BASENAME='"a"' -DKBUILD_MODNAME='"a"' -D__KBUILD_MODNAME=kmod_a /home/kbg/tz/a/a.c | scripts/genksyms/genksyms   -r /dev/null >> /home/kbg/tz/a/.a.o.cmd; fi
+# cmd_mod /home/kbg/tz/a/a.mod
+  printf '%s
+'   a.o | awk '!x[$0]++ { print("/home/kbg/tz/a/"$0) }' > /home/kbg/tz/a/a.mod
+# cmd_modules_order /home/kbg/tz/a/modules.order
+  {   echo /home/kbg/tz/a/a.o; :; } > /home/kbg/tz/a/modules.order
+sh ./scripts/modules-check.sh /home/kbg/tz/a/modules.order
+make -f ./scripts/Makefile.modpost
+# MODPOST /home/kbg/tz/a/Module.symvers
+   scripts/mod/modpost -M -m -a      -o /home/kbg/tz/a/Module.symvers -T /home/kbg/tz/a/modules.order -i Module.symvers -e -i /home/kbg/tz/b/Module.symvers
+make -f ./scripts/Makefile.modfinal
+# CC [M]  /home/kbg/tz/a/a.mod.o
+  gcc-13 -Wp,-MMD,/home/kbg/tz/a/.a.mod.o.d -nostdinc -I./arch/x86/include -I./arch/x86/include/generated -I./include -I./arch/x86/include/uapi -I./arch/x86/include/generated/uapi -I./include/uapi -I./include/generated/uapi -include ./include/linux/compiler-version.h -include ./include/linux/kconfig.h -I./ubuntu/include -include ./include/linux/compiler_types.h -D__KERNEL__ -fmacro-prefix-map=./= -std=gnu11 -fshort-wchar -funsigned-char -fno-common -fno-PIE -fno-strict-aliasing -mno-sse -mno-mmx -mno-sse2 -mno-3dnow -mno-avx -fcf-protection=none -m64 -falign-jumps=1 -falign-loops=1 -mno-80387 -mno-fp-ret-in-387 -mpreferred-stack-boundary=3 -mskip-rax-setup -mtune=generic -mno-red-zone -mcmodel=kernel -Wno-sign-compare -fno-asynchronous-unwind-tables -mindirect-branch=thunk-extern -mindirect-branch-register -mindirect-branch-cs-prefix -mfunction-return=thunk-extern -fno-jump-tables -mharden-sls=all -fpatchable-function-entry=16,16 -fno-delete-null-pointer-checks -O2 -fno-allow-store-data-races -fstack-protector-strong -fno-omit-frame-pointer -fno-optimize-sibling-calls -ftrivial-auto-var-init=zero -fno-stack-clash-protection -fzero-call-used-regs=used-gpr -pg -mrecord-mcount -mfentry -DCC_USING_FENTRY -falign-functions=16 -fstrict-flex-arrays=3 -fno-strict-overflow -fno-stack-check -fconserve-stack -Wall -Wundef -Werror=implicit-function-declaration -Werror=implicit-int -Werror=return-type -Werror=strict-prototypes -Wno-format-security -Wno-trigraphs -Wno-frame-address -Wno-address-of-packed-member -Wmissing-declarations -Wmissing-prototypes -Wframe-larger-than=1024 -Wno-main -Wno-unused-but-set-variable -Wno-unused-const-variable -Wno-dangling-pointer -Wvla -Wno-pointer-sign -Wcast-function-type -Wno-stringop-overflow -Wno-array-bounds -Wno-alloc-size-larger-than -Wimplicit-fallthrough=5 -Werror=date-time -Werror=incompatible-pointer-types -Werror=designated-init -Wenum-conversion -Wno-unused-but-set-variable -Wno-unused-const-variable -Wno-restrict -Wno-packed-not-aligned -Wno-format-overflow -Wno-format-truncation -Wno-stringop-truncation -Wno-override-init -Wno-missing-field-initializers -Wno-type-limits -Wno-shift-negative-value -Wno-maybe-uninitialized -Wno-sign-compare -g -gdwarf-5 -fsanitize=bounds-strict -fsanitize=shift -fsanitize=bool -fsanitize=enum -DMODULE -DKBUILD_BASENAME='"a.mod"' -DKBUILD_MODNAME='"a"' -D__KBUILD_MODNAME=kmod_a -c -o /home/kbg/tz/a/a.mod.o /home/kbg/tz/a/a.mod.c
+# LD [M]  /home/kbg/tz/a/a.ko
+  ld -r -m elf_x86_64 -z noexecstack --no-warn-rwx-segments --build-id=sha1  -T scripts/module.lds -o /home/kbg/tz/a/a.ko /home/kbg/tz/a/a.o /home/kbg/tz/a/a.mod.o
+# BTF [M] /home/kbg/tz/a/a.ko
+  if [ ! -f vmlinux ]; then printf "Skipping BTF generation for %s due to unavailability of vmlinux
+" /home/kbg/tz/a/a.ko 1>&2; else LLVM_OBJCOPY="objcopy" pahole -J --btf_gen_floats -j --lang_exclude=rust --skip_encoding_btf_inconsistent_proto --btf_gen_optimized --btf_base vmlinux /home/kbg/tz/a/a.ko; ./tools/bpf/resolve_btfids/resolve_btfids -b vmlinux /home/kbg/tz/a/a.ko; fi;
+Skipping BTF generation for /home/kbg/tz/a/a.ko due to unavailability of vmlinux
+make[1]: 디렉터리 '/usr/src/linux-headers-6.8.0-41-generic' 나감
+

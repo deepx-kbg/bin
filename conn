@@ -1,6 +1,6 @@
 #!/bin/bash
 
-pushd ~/deepx_runtime/rt_npu_linux_driver/modules
+pushd ~/deepx_runtime/dx_rt_npu_linux_driver/modules
 
 sudo ./module_insert.sh
 

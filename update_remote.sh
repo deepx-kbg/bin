@@ -14,11 +14,6 @@ update_remote_in_subdirs() {
             # Extract the repository name
             repo_name=$(basename "$remote_url")
             
-            # Special case for the specific repository name
-            if [[ "$repo_name" == "CryptoCell-312_Software_bundle_v1.4.git" ]]; then
-                repo_name="rt_$repo_name"
-            fi
-            
             # Construct the new URL
             new_url="git@gh.deepx.ai:deepx/$repo_name"
 
@@ -39,6 +34,9 @@ update_remote_in_subdirs() {
     if [ -f "$dir/.gitmodules" ]; then
         # Update .gitmodules file
         sed -i 's|git@github.com:KOMOSYS|git@gh.deepx.ai:deepx|g' "$dir/.gitmodules"
+
+        # Update specific repository URL
+        sed -i 's|\/CryptoCell-312_Software_bundle_v1.4.git|\/rt_CryptoCell-312_Software_bundle_v1.4.git|g' "$dir/.gitmodules"
 
         # Sync submodules
         git -C "$dir" submodule sync

@@ -4,6 +4,7 @@ pushd ~/deepx_runtime/rt_npu_linux_driver/modules
 
 sudo ./module_insert.sh
 
+sleep 1
 #sudo ../utils/script/pcie_rescan.sh
 
 ~/deepx_runtime/dx_rt/bin/dxrt-cli -s

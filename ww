@@ -1,3 +1,4 @@
 #!/bin/bash
 
+sudo pcie_rescan.sh
 dxrt-cli -w ~/m1a/outputs/boot2nd_pcie.bin -w ~/m1a/outputs/m1a_rtos.bin

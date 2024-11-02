@@ -227,15 +227,16 @@ def prepare_docker_recipes(sdk_dir, release_dir):
 
 def main():
     parser = argparse.ArgumentParser(description='SDK Setup Script')
-    parser.add_argument('packages', nargs='*', choices=['firmware', 'runtime', 'driver', 'app', 'all', 'rt'],
-                    help='Packages to build: firmware, runtime, driver, app, all, or rt')
+    parser.add_argument('--package', action='append', choices=['firmware', 'runtime', 'driver', 'app', 'all', 'rt'],
+            help='Packages to build (can be specified multiple times)')
     parser.add_argument('--board', type=str, default='mdot2', help='Board type (default: mdot2)')
     parser.add_argument('--docker', action='store_true', help='Install Docker if not installed')
 
     args = parser.parse_args()
 
-    if not args.packages:
-        args.packages = ['all']
+    if args.package is None:
+        args.package = ['all']
+    packages = args.package
 
     global sdk_dir
     sdk_dir = os.path.expanduser("~/dxnn_sdk")
@@ -248,7 +249,7 @@ def main():
     build_dir = os.path.join(sdk_dir, 'build')
     os.makedirs(build_dir, exist_ok=True)
 
-    build_packages(args.packages, args.board, sdk_dir, firmware_dir, runtime_dir, driver_dir, app_dir)
+    build_packages(packages, args.board, sdk_dir, firmware_dir, runtime_dir, driver_dir, app_dir)
     make_sdk_debs(sdk_dir, runtime_dir, driver_dir, app_dir)
     if args.docker:
         install_docker()

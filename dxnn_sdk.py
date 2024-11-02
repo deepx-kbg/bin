@@ -7,6 +7,7 @@ import glob
 import subprocess
 import sys
 import shutil
+import datetime
 import re
 import argparse
 
@@ -46,6 +47,124 @@ def DEBUG(text):
     color_code = COLORS['blue']
     print(f"{color_code}{text}{COLORS['reset']}")
 
+
+# --------------------
+# start of ChangelogUpdater
+# --------------------
+
+class ChangelogUpdater:
+    def __init__(self, package_path):
+        self.package_path = package_path
+        self.version_file = os.path.join(package_path, 'release.ver')
+        self.notes_file = os.path.join(package_path, 'RELEASE_NOTES.md')
+        self.control_file = os.path.join(package_path, 'debian/control')
+        self.changelog_file = os.path.join(package_path, 'debian/changelog')
+        self.current_version = self.get_current_version()
+        self.new_version = self.get_new_version()
+
+    def get_current_version(self):
+        # Read the current version from the changelog file.
+        with open(self.changelog_file, 'r') as f:
+            first_line = f.readline().strip()
+            version = re.search(r'\((.*?)\)', first_line)
+            if version:
+                return version.group(1)
+        return None
+
+    def get_new_version(self):
+        # Read the version from the release.ver file.
+        try:
+            with open(self.version_file, 'r') as f:
+                version = f.readline().strip()
+                return version.lstrip('v')
+        except FileNotFoundError:
+            print("Error: release.ver file not found.")
+            exit(1)
+
+    def extract_notes(self):
+        # Extract the notes for the current version from RELEASE_NOTES.md.
+        try:
+            with open(self.notes_file, 'r') as f:
+                notes = f.read()
+        except FileNotFoundError:
+            print("Error: RELEASE_NOTES.md file not found.")
+            exit(1)
+
+        # Find the section for the current version.
+        version_pattern = re.compile(rf'## \[{self.new_version}\] - (\d{{4}}-\d{{2}}-\d{{2}})', re.MULTILINE)
+        match = version_pattern.search(notes)
+
+        if match:
+            start_index = match.start()
+            end_index = notes.find('## [', start_index + 1)
+
+            # If there's no next version section, get until the end of the document.
+            end_index = end_index if end_index != -1 else len(notes)
+
+            return notes[start_index:end_index].strip().replace('##', '').replace('###', '').strip()
+        else:
+            print(f"Warning: No notes found for version {self.new_version}.")
+            return ""
+
+    def get_maintainer_info(self):
+        # Read the Maintainer information from the debian/control file.
+        try:
+            with open(self.control_file, 'r') as f:
+                for line in f:
+                    if line.startswith("Maintainer:"):
+                        return line[len("Maintainer:"):].strip()
+        except FileNotFoundError:
+            print("Error: debian/control file not found.")
+            exit(1)
+
+        print("Warning: Maintainer information not found.")
+        return "Unknown Maintainer <unknown@example.com>"
+
+    # --------------------
+    # Get package name from debian/control
+    # --------------------
+    def get_package_name(self):
+        try:
+            with open(self.control_file, 'r') as f:
+                for line in f:
+                    if line.startswith("Package:"):
+                        return line[len("Package:"):].strip()
+        except FileNotFoundError:
+            print("Error: debian/control file not found.")
+            exit(1)
+
+        print("Warning: Package information not found.")
+        return "UnknownPackage"
+
+    # --------------------
+    # Generate the changelog content
+    # --------------------
+    def generate_changelog(self, notes, maintainer):
+        date = datetime.datetime.now().strftime("%a, %d %b %Y %H:%M:%S %z")
+        package_name = self.get_package_name()
+
+        changelog = f"{package_name} ({self.new_version}) unstable; urgency=medium\n\n"
+        changelog += "\n".join(f"  * {line.strip()}" for line in notes.splitlines() if line.strip()) + "\n\n"
+        changelog += f" -- {maintainer}  {date}\n"
+
+        return changelog
+
+    def update_changelog(self):
+        if self.current_version < self.new_version:
+            notes = self.extract_notes()
+            maintainer = self.get_maintainer_info()
+            changelog = self.generate_changelog(notes, maintainer)
+
+            with open(self.changelog_file, "w") as f:
+                f.write(changelog)
+
+            print("Changelog updated successfully!")
+        else:
+            print("No update needed. Current version is up to date.")
+
+# --------------------
+# end of ChangelogUpdater
+# --------------------
 
 def run_command(command, cwd=None):
     """Run a shell command and handle errors."""
@@ -135,6 +254,10 @@ def build_deb(package_dir, build_dir):
         WARN(f"The directory '{package_dir}' does not exist.")
         return
     os.chdir(package_dir)  # change to package directory
+
+    updater = ChangelogUpdater(package_dir)
+    updater.update_changelog()
+
     run_command(f"dpkg-buildpackage -us -uc -b")
 
     deb_files = glob.glob("../*.deb")
@@ -248,6 +371,8 @@ def main():
 
     build_dir = os.path.join(sdk_dir, 'build')
     os.makedirs(build_dir, exist_ok=True)
+
+    os.environ['DEEPX_FIRMWARE_PATH'] = firmware_dir
 
     build_packages(packages, args.board, sdk_dir, firmware_dir, runtime_dir, driver_dir, app_dir)
     make_sdk_debs(sdk_dir, runtime_dir, driver_dir, app_dir)

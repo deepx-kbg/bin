@@ -102,7 +102,6 @@ def install_docker():
 def make_sdk_debs(sdk_dir, runtime_dir, driver_dir, app_dir):
     """Make debian packages."""
     build_dir = os.path.join(sdk_dir, "build")
-    os.makedirs(build_dir, exist_ok=True)
 
     build_deb(runtime_dir, build_dir)
     build_deb(driver_dir, build_dir)
@@ -131,6 +130,10 @@ def get_latest_deb_file(pattern):
 
 def build_deb(package_dir, build_dir):
     """Build the package and place the result in a specified 'packages' directory."""
+
+    if not os.path.exists(package_dir):
+        WARN(f"The directory '{package_dir}' does not exist.")
+        return
     os.chdir(package_dir)  # change to package directory
     run_command(f"dpkg-buildpackage -us -uc -b")
 
@@ -224,26 +227,33 @@ def prepare_docker_recipes(sdk_dir, release_dir):
 
 def main():
     parser = argparse.ArgumentParser(description='SDK Setup Script')
-    parser.add_argument('packages', nargs='+', choices=['firmware', 'runtime', 'driver', 'app', 'all', 'rt'],
-                        help='Packages to build: firmware, runtime, driver, app, all, or rt')
+    parser.add_argument('packages', nargs='*', choices=['firmware', 'runtime', 'driver', 'app', 'all', 'rt'],
+                    help='Packages to build: firmware, runtime, driver, app, all, or rt')
     parser.add_argument('--board', type=str, default='mdot2', help='Board type (default: mdot2)')
     parser.add_argument('--docker', action='store_true', help='Install Docker if not installed')
 
     args = parser.parse_args()
 
+    if not args.packages:
+        args.packages = ['all']
+
     global sdk_dir
-    sdk_dir = os.path.expanduser("~/sdk")
+    sdk_dir = os.path.expanduser("~/dxnn_sdk")
     release_dir = os.path.realpath(os.path.join(sdk_dir, "release_docker"))
     runtime_dir = os.path.realpath(os.path.join(sdk_dir, "deepx_runtime"))
     driver_dir = os.path.realpath(os.path.join(sdk_dir, "deepx_host_driver"))
     app_dir = os.path.realpath(os.path.join(sdk_dir, "deepx_app"))
     firmware_dir = os.path.realpath(os.path.join(sdk_dir, "deepx_firmware"))
 
+    build_dir = os.path.join(sdk_dir, 'build')
+    os.makedirs(build_dir, exist_ok=True)
+
     build_packages(args.packages, args.board, sdk_dir, firmware_dir, runtime_dir, driver_dir, app_dir)
     make_sdk_debs(sdk_dir, runtime_dir, driver_dir, app_dir)
     if args.docker:
         install_docker()
         prepare_docker_recipes(sdk_dir, release_dir)
+    DONE("Done.")
 
 if __name__ == "__main__":
     main()

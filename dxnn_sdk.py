@@ -350,20 +350,20 @@ def prepare_docker_recipes(sdk_dir, release_dir):
 
 def set_project_home(directory=None):
     if directory:
-        project_home = os.path.abspath(directory)
+        sdk_home = os.path.abspath(directory)
     else:
-        project_home = os.getcwd()
+        sdk_home = os.getcwd()
 
-    print(f"Project home directory set to: {project_home}")
-    return project_home
+    INFO(f"make project directory under {sdk_home}")
+    return sdk_home
 
 def main():
     parser = argparse.ArgumentParser(description='SDK Setup Script')
+    parser.add_argument('--sdk_home', type=str, help='Specify DXNN SDK home directory')
     parser.add_argument('--package', action='append', choices=['firmware', 'runtime', 'driver', 'app', 'all', 'rt'],
             help='Packages to build (can be specified multiple times)')
     parser.add_argument('--board', type=str, default='mdot2', help='Board type (default: mdot2)')
     parser.add_argument('--docker', action='store_true', help='Install Docker if not installed')
-    parser.add_argument('--project-home', type=str, help='Specify project home directory')
 
 
     args = parser.parse_args()
@@ -372,10 +372,8 @@ def main():
         args.package = ['all']
     packages = args.package
 
-    project_home = set_project_home(args.project_home)
-
     global sdk_dir
-    sdk_dir = os.path.expanduser("~/dxnn_sdk")
+    sdk_dir = os.path.join(set_project_home(args.sdk_home), "dxnn_sdk")
     release_dir = os.path.realpath(os.path.join(sdk_dir, "release_docker"))
     runtime_dir = os.path.realpath(os.path.join(sdk_dir, "deepx_runtime"))
     driver_dir = os.path.realpath(os.path.join(sdk_dir, "deepx_host_driver"))

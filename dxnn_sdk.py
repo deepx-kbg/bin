@@ -312,8 +312,6 @@ def build_packages(packages, board, sdk_dir, firmware_dir, runtime_dir, driver_d
 
         host_arch = platform.machine()
 
-        INFO(f"-----------------------------------------------host arch {host_arch}")
-
         if host_arch == "x86_64":
             os.chdir(firmware_dir)
             build_firmware(board)

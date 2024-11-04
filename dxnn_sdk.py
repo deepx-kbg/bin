@@ -8,6 +8,7 @@ import glob
 import subprocess
 import sys
 import stat
+import platform
 import shutil
 import datetime
 import re
@@ -308,12 +309,21 @@ def build_packages(packages, board, sdk_dir, firmware_dir, runtime_dir, driver_d
     if "firmware" in packages or "all" in packages:
         INFO("Building firmware...")
         clone_or_update_repo(GH_FW_REPO, firmware_dir)
-        os.chdir(firmware_dir)
-        build_firmware(board)
 
-        firmware_build = os.path.join(firmware_dir, "outputs", "fw.bin")
-        firmware_file = os.path.join(build_dir, os.path.basename(f"fw_{board}.bin"))
-        shutil.copy2(firmware_build, firmware_file)
+        host_arch = platform.machine()
+
+        INFO(f"-----------------------------------------------host arch {host_arch}")
+
+        if host_arch == "x86_64":
+            os.chdir(firmware_dir)
+            build_firmware(board)
+            firmware_build = os.path.join(firmware_dir, "outputs", "fw.bin")
+            firmware_file = os.path.join(build_dir, os.path.basename(f"fw_{board}.bin"))
+            shutil.copy2(firmware_build, firmware_file)
+        else: # aarch64
+            prebuilt_firmware_file = os.path.join(firmware_dir, "prebuilt/latest", f"{board}", "fw.bin")
+            firmware_file = os.path.join(build_dir, os.path.basename(f"fw_{board}.bin"))
+            shutil.copy2(prebuilt_firmware_file, firmware_file)
 
     if "runtime" in packages or "rt" in packages or "all" in packages:
         INFO("Building runtime...")

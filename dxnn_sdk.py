@@ -348,18 +348,31 @@ def prepare_docker_recipes(sdk_dir, release_dir):
     copy_latest_deb_file(os.path.join(build_dir, "dx-app_*.deb"), package_dxrt)
     copy_latest_deb_file(os.path.join(build_dir, "dxrt-driver_*.deb"), package_dxrt)
 
+def set_project_home(directory=None):
+    if directory:
+        project_home = os.path.abspath(directory)
+    else:
+        project_home = os.getcwd()
+
+    print(f"Project home directory set to: {project_home}")
+    return project_home
+
 def main():
     parser = argparse.ArgumentParser(description='SDK Setup Script')
     parser.add_argument('--package', action='append', choices=['firmware', 'runtime', 'driver', 'app', 'all', 'rt'],
             help='Packages to build (can be specified multiple times)')
     parser.add_argument('--board', type=str, default='mdot2', help='Board type (default: mdot2)')
     parser.add_argument('--docker', action='store_true', help='Install Docker if not installed')
+    parser.add_argument('--project-home', type=str, help='Specify project home directory')
+
 
     args = parser.parse_args()
 
     if args.package is None:
         args.package = ['all']
     packages = args.package
+
+    project_home = set_project_home(args.project_home)
 
     global sdk_dir
     sdk_dir = os.path.expanduser("~/dxnn_sdk")

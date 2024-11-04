@@ -1,7 +1,7 @@
 #!/bin/python3
 
 # Copyright (C) 2024  DeepX Co., Ltd.
-# v0.1
+# v0.2
 
 import os
 import glob

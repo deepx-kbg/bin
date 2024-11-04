@@ -1,11 +1,13 @@
 #!/bin/python3
 
 # Copyright (C) 2024  DeepX Co., Ltd.
+# v0.1
 
 import os
 import glob
 import subprocess
 import sys
+import stat
 import shutil
 import datetime
 import re
@@ -357,6 +359,18 @@ def set_project_home(directory=None):
     INFO(f"make project directory under {sdk_home}")
     return sdk_home
 
+def create_env_script(directory):
+    env_script_path = os.path.join(directory, 'dxnn_sdk_env.sh')
+    with open(env_script_path, 'w') as f:
+        f.write(f"#!/bin/bash\n")
+        f.write(f"# SDK Environment Variables\n")
+        f.write(f"export DXNN_SDK_HOME={directory}\n")
+        f.write(f"export PATH=$DXNN_SDK_HOME/bin:$PATH\n")
+        f.write(f"export PS1='[{directory}] \\u@\\h:\\w$ '\n")  # Change shell prompt
+        INFO(f"Environment script created at: {env_script_path}")
+
+    os.chmod(env_script_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
+
 def main():
     parser = argparse.ArgumentParser(description='SDK Setup Script')
     parser.add_argument('--sdk_home', type=str, help='Specify DXNN SDK home directory')
@@ -390,6 +404,8 @@ def main():
     if args.docker:
         install_docker()
         prepare_docker_recipes(sdk_dir, release_dir)
+
+    create_env_script(sdk_dir)
     DONE("Done.")
 
 if __name__ == "__main__":

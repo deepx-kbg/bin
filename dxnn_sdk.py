@@ -1,7 +1,11 @@
 #!/bin/python3
 
+# DXNN SDK Build Tool
+#   v0.3 / <kbg@deepx.ai>
+
+# SPDX-License-Identifier: Apache-2.0
 # Copyright (C) 2024  DeepX Co., Ltd.
-# v0.2
+
 
 import os
 import glob
@@ -10,6 +14,7 @@ import sys
 import stat
 import platform
 import shutil
+import tarfile
 import datetime
 import re
 import argparse
@@ -200,13 +205,79 @@ class ChangelogUpdater:
 # end of ChangelogUpdater
 # ---------------------------------------------------------------------------------------------------------
 
-def run_command(command, cwd=None):
-    """Run a shell command and handle errors."""
+
+
+# ---------------------------------------------------------------------------------------------------------
+# start of ChangelogUpdater
+# ---------------------------------------------------------------------------------------------------------
+
+class DockerImageManager:
+    def __init__(self, configs, target, os_version, release_dir="release"):
+        self.target = target.lower()
+
+        self.os_version = os_version
+        self.release_dir = os.path.join(configs.sdk_dir, release_dir)
+        self.image_tag = f"deepx/{self.target}:ubuntu-{self.os_version}"
+        self.image_file = os.path.join(self.release_dir, f"{self.target}_{self.os_version}.tar")
+        self.compressed_file = f"{self.image_file}.gz"
+
+        # Dockerfile Path and Build option
+        self.dockerfile_map = {
+            "dxnn": f"{configs.docker_dir}/Dockerfile.dxnn",
+            "dxrt": f"{configs.docker_dir}/Dockerfile.dxrt"
+        }
+
+        self.build_options_map = {
+            "dxnn": f"--build-arg UBUNTU_VERSION={self.os_version} -f {self.dockerfile_map['dxnn']} -t {self.image_tag} {configs.docker_dir}",
+            "dxrt": f"--build-arg UBUNTU_VERSION={self.os_version} -f {self.dockerfile_map['dxrt']} -t {self.image_tag} {configs.docker_dir}"
+        }
+
+    def build_docker_image(self):
+        """Build Docker image"""
+        if self.target not in self.dockerfile_map:
+            CRIT(f"Invalid target {self.target}")
+            sys.exit(1)
+
+        # execute 'Docker build'
+        INFO(f"Building Docker image for {self.target} with Ubuntu version {self.os_version}...")
+        build_command = f"sudo docker build {self.build_options_map[self.target]}"
+        run_shell_command(build_command)
+
+    def save_and_compress_docker_image(self):
+        """Save the Docker image as a tar file, compress it, and move it to the release directory"""
+        # move to release directory
+        if not os.path.exists(self.release_dir):
+            os.makedirs(self.release_dir)
+
+        # save Docker image
+        INFO(f"Saving Docker image {self.image_tag} to file {self.image_file}...")
+        save_command = f"sudo docker save -o {self.image_file} {self.image_tag}"
+        run_shell_command(save_command)
+
+        run_shell_command(f"sudo chmod 666 {self.image_file}")
+
+        # compress
+        #INFO(f"Compressing image file {self.image_file} into {self.compressed_file}...")
+        #with open(self.image_file, 'rb') as f_in:
+        #    with tarfile.open(self.compressed_file, 'w:gz') as f_out:
+        #        tarinfo = tarfile.TarInfo(name=f"{self.image_file}")
+        #        f_out.add(self.image_file, arcname=f"{self.image_file}")
+
+        # remove origin
+        #os.remove(self.image_file)
+
+# ---------------------------------------------------------------------------------------------------------
+# end of ChangelogUpdater
+# ---------------------------------------------------------------------------------------------------------
+
+
+def run_shell_command(command):
+    """Run a shell command and return result."""
     try:
-        result = subprocess.run(command, check=True, shell=True, cwd=cwd)
-        return result
+        result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return result.stdout.decode('utf-8')
     except subprocess.CalledProcessError as e:
-        CRIT(f"Error executing command: {command}\n{e}")
+        CRIT(f"Error occurred while executing command: {command}, {e.stderr.decode('utf-8')}")
         sys.exit(1)
 
 def clone_or_update_repo(repo_url, target_dir):
@@ -214,48 +285,48 @@ def clone_or_update_repo(repo_url, target_dir):
     if not os.path.exists(target_dir):
         os.makedirs(target_dir, exist_ok=True)
         os.chdir(target_dir)
-        run_command(f"git clone --recurse-submodules {repo_url} .")
+        run_shell_command(f"git clone --recurse-submodules {repo_url} .")
     else:
         os.chdir(target_dir)
-        run_command("git pull --recurse-submodules")
+        run_shell_command("git pull --recurse-submodules")
 
 def build_firmware(board):
     """Build the firmware."""
-    run_command(f"./m1a_setup.py -t asic -o {board}")
+    run_shell_command(f"./m1a_setup.py -t asic -o {board}")
 
 def build_runtime():
     """Build the runtime."""
-    run_command("./build.sh --clean")
+    run_shell_command("./build.sh --clean")
     os.chdir('python_package')
-    run_command("pip install .")
+    run_shell_command("pip install .")
 
 def build_driver():
     """Build the NPU Linux driver."""
-    run_command("./build.sh -c clean")
-    run_command("./build.sh -f debugfs")
-    run_command("sudo ./build.sh -c install")
-    run_command("sudo ./module_insert.sh")
+    run_shell_command("./build.sh -c clean")
+    run_shell_command("./build.sh -f debugfs")
+    run_shell_command("sudo ./build.sh -c install")
+    run_shell_command("sudo ./module_insert.sh")
 
 def build_app():
     """Build the App."""
-    run_command("./install.sh --opencv")
-    run_command("./build.sh --clean")
+    run_shell_command("./install.sh --opencv")
+    run_shell_command("./build.sh --clean")
 
 def build_validation():
     """Build the NPU Validation."""
-    run_command("./build.sh --clean")
+    run_shell_command("./build.sh --clean")
     os.chdir('python_package')
-    run_command("pip install .")
+    run_shell_command("pip install .")
 
 def install_docker():
     """Install Docker if not installed."""
     if subprocess.call("command -v docker", shell=True) != 0:
         DEBUG("Installing Docker...")
-        run_command("sudo apt update -y")
-        run_command("sudo apt-get install -y curl")
-        run_command("curl -fsSL https://get.docker.com -o get-docker.sh")
-        run_command("sh get-docker.sh")
-        run_command(f"sudo usermod -aG docker {os.getenv('USER')}")
+        run_shell_command("sudo apt update -y")
+        run_shell_command("sudo apt-get install -y curl")
+        run_shell_command("curl -fsSL https://get.docker.com -o get-docker.sh")
+        run_shell_command("sh get-docker.sh")
+        run_shell_command(f"sudo usermod -aG docker {os.getenv('USER')}")
         DEBUG("Docker installation complete. Please reboot.")
 
 def make_sdk_debs(configs):
@@ -307,7 +378,7 @@ def build_deb(package_dir, build_dir):
     updater = ChangelogUpdater(package_dir)
     updater.update_changelog()
 
-    run_command(f"dpkg-buildpackage -us -uc -b")
+    run_shell_command(f"dpkg-buildpackage -us -uc -b")
 
     deb_files = glob.glob("../*.deb")
     for deb_file in deb_files:
@@ -496,7 +567,7 @@ def main():
     parser.add_argument('--package', action='append', choices=['firmware', 'runtime', 'driver', 'app', 'rt', 'all', 'validation'],
             help='Packages to build (can be specified multiple times)')
     parser.add_argument('--board', type=str, default='mdot2', help='Board type (default: mdot2)')
-    parser.add_argument('--action', action='append', choices=['download', 'build', 'post', 'all'],
+    parser.add_argument('--action', action='append', choices=['download', 'build', 'post', 'release', 'all'],
             help='action with package (can be specified multiple times)')
     parser.add_argument('--docker', action='store_true', help='Install Docker if not installed')
 
@@ -538,6 +609,15 @@ def main():
             install_docker()
             prepare_docker_recipes(configs)
         create_env_script(configs)
+    if "release" in actions:
+        target = "DXRT"
+        os_version = "24.04"
+
+        docker_manager = DockerImageManager(configs, target, os_version)
+        docker_manager.build_docker_image()
+
+        docker_manager.save_and_compress_docker_image()
+
     DONE("Done.")
 
 if __name__ == "__main__":

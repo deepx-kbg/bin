@@ -19,6 +19,7 @@ GH_DRIVER_REPO = "git@gh.deepx.ai:deepx/dx_rt_npu_linux_driver.git"
 GH_RT_REPO = "git@gh.deepx.ai:deepx/dx_rt.git"
 GH_APP_REPO = "git@gh.deepx.ai:deepx/dx_app.git"
 GH_DOCKER_REPO = "git@gh.deepx.ai:deepx/rt_release_docker.git"
+GH_NPU_VALIDATION_REPO = "git@gh.deepx.ai:deepx/rt_npu_validation.git"
 
 
 COLORS = {
@@ -51,9 +52,39 @@ def DEBUG(text):
     print(f"{color_code}{text}{COLORS['reset']}")
 
 
-# --------------------
+# ---------------------------------------------------------------------------------------------------------
+# start of Build Config
+# ---------------------------------------------------------------------------------------------------------
+
+class BuildConfig:
+    def __init__(self, packages, board, sdk_dir, firmware_dir, runtime_dir, driver_dir, app_dir, validation_dir, docker_dir):
+        self.packages = packages
+        self.board = board
+        self.sdk_dir = sdk_dir
+        self.firmware_dir = firmware_dir
+        self.runtime_dir = runtime_dir
+        self.driver_dir = driver_dir
+        self.app_dir = app_dir
+        self.validation_dir = validation_dir
+        self.docker_dir = docker_dir
+
+        self.build_dir = os.path.join(sdk_dir, 'build')
+
+    def __repr__(self):
+        return f"BuildConfig(packages={self.packages}, board={self.board}, " \
+               f"sdk_dir={self.sdk_dir}, firmware_dir={self.firmware_dir}, " \
+               f"runtime_dir={self.runtime_dir}, driver_dir={self.driver_dir}, " \
+               f"app_dir={self.app_dir}, docker_dir={self.docker_dir})"
+
+# ---------------------------------------------------------------------------------------------------------
+# end of Build Config
+# ---------------------------------------------------------------------------------------------------------
+
+
+
+# ---------------------------------------------------------------------------------------------------------
 # start of ChangelogUpdater
-# --------------------
+# ---------------------------------------------------------------------------------------------------------
 
 class ChangelogUpdater:
     def __init__(self, package_path):
@@ -165,9 +196,9 @@ class ChangelogUpdater:
         else:
             print("No update needed. Current version is up to date.")
 
-# --------------------
+# ---------------------------------------------------------------------------------------------------------
 # end of ChangelogUpdater
-# --------------------
+# ---------------------------------------------------------------------------------------------------------
 
 def run_command(command, cwd=None):
     """Run a shell command and handle errors."""
@@ -210,6 +241,12 @@ def build_app():
     run_command("./install.sh --opencv")
     run_command("./build.sh --clean")
 
+def build_validation():
+    """Build the NPU Validation."""
+    run_command("./build.sh --clean")
+    os.chdir('python_package')
+    run_command("pip install .")
+
 def install_docker():
     """Install Docker if not installed."""
     if subprocess.call("command -v docker", shell=True) != 0:
@@ -221,9 +258,18 @@ def install_docker():
         run_command(f"sudo usermod -aG docker {os.getenv('USER')}")
         DEBUG("Docker installation complete. Please reboot.")
 
-def make_sdk_debs(sdk_dir, runtime_dir, driver_dir, app_dir):
+def make_sdk_debs(configs):
     """Make debian packages."""
-    build_dir = os.path.join(sdk_dir, "build")
+
+    packages = configs.packages
+    sdk_dir = configs.sdk_dir
+    firmware_dir = configs.firmware_dir
+    runtime_dir = configs.runtime_dir
+    driver_dir = configs.driver_dir
+    app_dir = configs.app_dir
+    validation_dir = configs.validation_dir
+    build_dir = configs.build_dir
+    docker_dir = configs.docker_dir
 
     build_deb(runtime_dir, build_dir)
     build_deb(driver_dir, build_dir)
@@ -302,13 +348,55 @@ def copy_latest_deb_file(pattern, target_dir):
 
     return target_file
 
-def build_packages(packages, board, sdk_dir, firmware_dir, runtime_dir, driver_dir, app_dir):
+def download_packages(configs):
+    """Handle download of specified packages."""
+
+    packages = configs.packages
+    sdk_dir = configs.sdk_dir
+    firmware_dir = configs.firmware_dir
+    runtime_dir = configs.runtime_dir
+    driver_dir = configs.driver_dir
+    app_dir = configs.app_dir
+    validation_dir = configs.validation_dir
+    build_dir = configs.build_dir
+    docker_dir = configs.docker_dir
+
+    if "firmware" in packages or "all" in packages:
+        INFO("Downloading firmware...")
+        clone_or_update_repo(GH_FW_REPO, firmware_dir)
+
+    if "runtime" in packages or "rt" in packages or "all" in packages:
+        INFO("Downloading runtime...")
+        clone_or_update_repo(GH_RT_REPO, runtime_dir)
+
+    if "driver" in packages or "rt" in packages or "all" in packages:
+        INFO("Downloading driver...")
+        clone_or_update_repo(GH_DRIVER_REPO, driver_dir)
+
+    if "app" in packages or "rt" in packages or "all" in packages:
+        INFO("Downloading app...")
+        clone_or_update_repo(GH_APP_REPO, app_dir)
+
+    if "validation" in packages:
+        INFO("Downloading npu validation...")
+        clone_or_update_repo(GH_NPU_VALIDATION_REPO, validation_dir)
+
+def build_packages(configs):
     """Handle building of specified packages."""
-    build_dir = os.path.join(sdk_dir, 'build')
+
+    packages = configs.packages
+    sdk_dir = configs.sdk_dir
+    board = configs.board
+    firmware_dir = configs.firmware_dir
+    runtime_dir = configs.runtime_dir
+    driver_dir = configs.driver_dir
+    app_dir = configs.app_dir
+    validation_dir = configs.validation_dir
+    build_dir = configs.build_dir
+    docker_dir = configs.docker_dir
 
     if "firmware" in packages or "all" in packages:
         INFO("Building firmware...")
-        clone_or_update_repo(GH_FW_REPO, firmware_dir)
 
         host_arch = platform.machine()
 
@@ -325,27 +413,30 @@ def build_packages(packages, board, sdk_dir, firmware_dir, runtime_dir, driver_d
 
     if "runtime" in packages or "rt" in packages or "all" in packages:
         INFO("Building runtime...")
-        clone_or_update_repo(GH_RT_REPO, runtime_dir)
         os.chdir(runtime_dir)
         build_runtime()
 
     if "driver" in packages or "rt" in packages or "all" in packages:
         INFO("Building driver...")
-        clone_or_update_repo(GH_DRIVER_REPO, driver_dir)
         os.chdir(os.path.join(sdk_dir, "deepx_host_driver/modules"))
         build_driver()
 
     if "app" in packages or "rt" in packages or "all" in packages:
         INFO("Building app...")
-        clone_or_update_repo(GH_APP_REPO, app_dir)
         os.chdir(app_dir)
         build_app()
 
-def prepare_docker_recipes(sdk_dir, release_dir):
-    build_dir = os.path.join(sdk_dir, 'build')
+    if "validation" in packages:
+        INFO("Building npu validation...")
+        os.chdir(validation_dir)
+        build_validation()
 
-    clone_or_update_repo(GH_DOCKER_REPO, release_dir)
-    package_dxrt = os.path.join(release_dir, "packages.dxrt")
+def prepare_docker_recipes(configs):
+    build_dir = configs.build_dir
+    docker_dir = configs.docker_dir
+
+    clone_or_update_repo(GH_DOCKER_REPO, docker_dir)
+    package_dxrt = os.path.join(docker_dir, "packages.dxrt")
 
     for filename in os.listdir(build_dir):
         if filename.endswith('.bin'):
@@ -367,24 +458,46 @@ def set_project_home(directory=None):
     INFO(f"make project directory under {sdk_home}")
     return sdk_home
 
-def create_env_script(directory):
-    env_script_path = os.path.join(directory, 'dxnn_sdk_env.sh')
+def create_env_script(configs):
+    packages = configs.packages
+    sdk_dir = configs.sdk_dir
+    board = configs.board
+    firmware_dir = configs.firmware_dir
+    runtime_dir = configs.runtime_dir
+    driver_dir = configs.driver_dir
+    app_dir = configs.app_dir
+    validation_dir = configs.validation_dir
+    build_dir = configs.build_dir
+    docker_dir = configs.docker_dir
+
+    env_script_path = os.path.join(sdk_dir, 'dxnn_sdk_env.sh')
     with open(env_script_path, 'w') as f:
         f.write(f"#!/bin/bash\n")
+        f.write(f"# This file is an automatically generated DXNN SDK script.\n")
         f.write(f"# SDK Environment Variables\n")
-        f.write(f"export DXNN_SDK_HOME={directory}\n")
+        f.write(f"\n")
+        f.write(f"export DXNN_SDK_HOME={sdk_dir}\n")
         f.write(f"export PATH=$DXNN_SDK_HOME/bin:$PATH\n")
-        f.write(f"export PS1='[{directory}] \\u@\\h:\\w$ '\n")  # Change shell prompt
-        INFO(f"Environment script created at: {env_script_path}")
+        f.write(f"export PS1='[{sdk_dir}] \\u@\\h:\\w$ '\n")  # Change shell prompt
+        f.write(f"\n")
+        f.write(f"export DXNN_FIRMWARE_DIR={firmware_dir}\n")
+        f.write(f"export DXNN_HOST_DRIVER_DIR={driver_dir}\n")
+        f.write(f"export DXNN_RUNTIME_DIR={runtime_dir}\n")
+        f.write(f"export DXNN_APP_DIR={app_dir}\n")
+        f.write(f"export DXNN_DOCKER_DIR={docker_dir}\n")
+        f.write(f"export DXNN_VALIDATION_DIR={validation_dir}\n")
+        INFO(f"Environment script created at: {env_script_path}\n")
 
     os.chmod(env_script_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
 
 def main():
     parser = argparse.ArgumentParser(description='SDK Setup Script')
     parser.add_argument('--sdk_home', type=str, help='Specify DXNN SDK home directory')
-    parser.add_argument('--package', action='append', choices=['firmware', 'runtime', 'driver', 'app', 'all', 'rt'],
+    parser.add_argument('--package', action='append', choices=['firmware', 'runtime', 'driver', 'app', 'rt', 'all', 'validation'],
             help='Packages to build (can be specified multiple times)')
     parser.add_argument('--board', type=str, default='mdot2', help='Board type (default: mdot2)')
+    parser.add_argument('--action', action='append', choices=['download', 'build', 'post', 'all'],
+            help='action with package (can be specified multiple times)')
     parser.add_argument('--docker', action='store_true', help='Install Docker if not installed')
 
 
@@ -394,12 +507,17 @@ def main():
         args.package = ['all']
     packages = args.package
 
+    if args.action is None:
+        args.action = ['all']
+    actions = args.action
+
     global sdk_dir
     sdk_dir = os.path.join(set_project_home(args.sdk_home), "dxnn_sdk")
-    release_dir = os.path.realpath(os.path.join(sdk_dir, "release_docker"))
+    docker_dir = os.path.realpath(os.path.join(sdk_dir, "release_docker"))
     runtime_dir = os.path.realpath(os.path.join(sdk_dir, "deepx_runtime"))
     driver_dir = os.path.realpath(os.path.join(sdk_dir, "deepx_host_driver"))
     app_dir = os.path.realpath(os.path.join(sdk_dir, "deepx_app"))
+    validation_dir = os.path.realpath(os.path.join(sdk_dir, "deepx_npu_validation"))
     firmware_dir = os.path.realpath(os.path.join(sdk_dir, "deepx_firmware"))
 
     build_dir = os.path.join(sdk_dir, 'build')
@@ -407,13 +525,19 @@ def main():
 
     os.environ['DEEPX_FIRMWARE_PATH'] = firmware_dir
 
-    build_packages(packages, args.board, sdk_dir, firmware_dir, runtime_dir, driver_dir, app_dir)
-    make_sdk_debs(sdk_dir, runtime_dir, driver_dir, app_dir)
-    if args.docker:
-        install_docker()
-        prepare_docker_recipes(sdk_dir, release_dir)
 
-    create_env_script(sdk_dir)
+    configs = BuildConfig(packages, args.board, sdk_dir, firmware_dir, runtime_dir, driver_dir, app_dir, validation_dir, docker_dir)
+
+    if "download" in actions or "all" in actions:
+        download_packages(configs)
+    if "build" in actions or "all" in actions:
+        build_packages(configs)
+    if "post" in actions or "all" in actions:
+        make_sdk_debs(configs)
+        if args.docker:
+            install_docker()
+            prepare_docker_recipes(configs)
+        create_env_script(configs)
     DONE("Done.")
 
 if __name__ == "__main__":

@@ -1,12 +1,14 @@
 #!/bin/bash
 
-pushd ~/deepx_runtime/dx_rt_npu_linux_driver/modules
+source ~/dxnn_sdk/dxnn_sdk_env.sh
+
+pushd ${DXNN_HOST_DRIVER_DIR}/modules
 
 sudo ./module_insert.sh
 
 sleep 1
 #sudo ../utils/script/pcie_rescan.sh
 
-~/deepx_runtime/dx_rt/bin/dxrt-cli -s
+${DXNN_RUNTIME_DIR}/bin/dxrt-cli -s
 
 popd

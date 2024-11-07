@@ -1,6 +1,6 @@
 #!/bin/bash
 
-pushd ~/m1a
+pushd ~/dxnn_sdk/deepx_firmware
 
 BOARD="$1"
 if [ -z "$BOARD" ]; then

@@ -1,4 +1,4 @@
 #!/bin/bash
 
-#sudo pcie_rescan.sh && sleep 1 && dxrt-cli -u ~/m1a/outputs/fw.bin && dxrt-cli -r 1 && sudo pcie_rescan.sh && sleep 1 && dxrt-cli -s
-sudo pcie_rescan.sh && sleep 1 && dxrt-cli -u ~/m1a/outputs/fw.bin && sleep 1.5 && sudo pcie_rescan.sh && sleep 1.5 && dxrt-cli -s
+#sudo pcie_rescan.sh && sleep 1 && dxrt-cli -u ~/dxnn_sdk/deepx_firmware/outputs/fw.bin && dxrt-cli -r 1 && sudo pcie_rescan.sh && sleep 1 && dxrt-cli -s
+sudo pcie_rescan.sh && sleep 1 && dxrt-cli -u ~/dxnn_sdk/deepx_firmware/outputs/fw.bin && sleep 1.5 && sudo pcie_rescan.sh && sleep 1.5 && dxrt-cli -s

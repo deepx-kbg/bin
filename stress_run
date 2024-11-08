@@ -1,6 +1,8 @@
 #!/bin/bash
 
-pushd ~/deepx_runtime/dx_rt
+DEFAULT_MODEL=2663
+pushd ${DXNN_RUNTIME_DIR}
+
 
 default_repeat=1
 
@@ -8,9 +10,6 @@ repeat=${1:-$default_repeat}
 
 echo "::: Stress Run Test :::"
 
-
-sudo pcie_rescan.sh 2>&1 1>/dev/null
-sleep 0.5
 
 if [ $? -ne 0 ]; then
     echo "fail - pcie"
@@ -23,8 +22,7 @@ do
     echo "Repeats: $i / $repeat"
     date +"%m/%d/%Y %I:%M:%S %p"
 
-    sudo ./bin/run_model -m /models/m1a/1876/YOLOV5X_2/YOLOV5X_2.dxnn -l 1000 -b | strings | grep FPS
-#    sudo ./bin/run_model -m /models/m1a/1780_local/YOLOv7/YOLOv7.dxnn -l 1000 -b | strings | grep FPS
+    run_model -m /models/m1a/${DEFAULT_MODEL}/YoloV7/YoloV7.dxnn -l 1000 -b | strings | grep FPS
 
     if [ $? -ne 0 ]; then
         echo "fail - model"

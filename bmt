@@ -1,11 +1,7 @@
 #!/bin/bash
 
-DEFAULT_MODEL=2290
-
-pushd ~/deepx_runtime/rt_npu_validation
-
-#sudo pcie_rescan.sh
-
+DEFAULT_MODEL=2663
+pushd ${DXNN_VALIDATION_DIR}
 regr_model="${1:-$DEFAULT_MODEL}"
 
 
@@ -14,6 +10,6 @@ regr_model="${1:-$DEFAULT_MODEL}"
 
 #sudo mount -t nfs -o nolock 192.168.30.201:/do/regression /mnt/regression
 #python python_package/examples/npu_bit_match.py --reg_f /mnt/regression/dxnn_regr_data/M1A/${regr_model} --rt_dir /models/m1a/${regr_model} --log m1a_test.log
-python python_package/examples/npu_bit_match.py --reg_f /models/m1a/2290 --rt_dir /models/m1a/2290 --log m1a_test.log
+python python_package/examples/npu_bit_match.py --reg_f /models/m1a/{regr_model} --rt_dir /models/m1a/{regr_model} --log m1a_test.log
 
 popd

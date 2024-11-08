@@ -584,6 +584,8 @@ def main():
 
     global sdk_dir
     sdk_dir = os.path.join(set_project_home(args.sdk_home), "dxnn_sdk")
+    if os.environ.get('DXNN_SDK_HOME'):
+        sdk_dir = os.environ.get('DXNN_SDK_HOME')
     docker_dir = os.path.realpath(os.path.join(sdk_dir, "release_docker"))
     runtime_dir = os.path.realpath(os.path.join(sdk_dir, "deepx_runtime"))
     driver_dir = os.path.realpath(os.path.join(sdk_dir, "deepx_host_driver"))

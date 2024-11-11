@@ -1,11 +1,10 @@
 #!/bin/python3
 
-# DXNN SDK Build Tool
-#   v0.3 / <kbg@deepx.ai>
-
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (C) 2024  DeepX Co., Ltd.
 
+# DXNN SDK Build Tool / v0.4 2024-11-11
+# Author : KOO Bongyu <kbg@deepx.ai>
 
 import os
 import glob
@@ -117,7 +116,7 @@ class ChangelogUpdater:
                 version = f.readline().strip()
                 return version.lstrip('v')
         except FileNotFoundError:
-            print("Error: release.ver file not found.")
+            CRIT("Error: release.ver file not found.")
             exit(1)
 
     def extract_notes(self):
@@ -126,7 +125,7 @@ class ChangelogUpdater:
             with open(self.notes_file, 'r') as f:
                 notes = f.read()
         except FileNotFoundError:
-            print("Error: RELEASE_NOTES.md file not found.")
+            CRIT("Error: RELEASE_NOTES.md file not found.")
             exit(1)
 
         # Find the section for the current version.
@@ -142,7 +141,7 @@ class ChangelogUpdater:
 
             return notes[start_index:end_index].strip().replace('##', '').replace('###', '').strip()
         else:
-            print(f"Warning: No notes found for version {self.new_version}.")
+            WARN(f"Warning: No notes found for version {self.new_version}.")
             return ""
 
     def get_maintainer_info(self):
@@ -153,10 +152,10 @@ class ChangelogUpdater:
                     if line.startswith("Maintainer:"):
                         return line[len("Maintainer:"):].strip()
         except FileNotFoundError:
-            print("Error: debian/control file not found.")
+            CRIT("Error: debian/control file not found.")
             exit(1)
 
-        print("Warning: Maintainer information not found.")
+        WARN("Warning: Maintainer information not found.")
         return "Unknown Maintainer <unknown@example.com>"
 
     # --------------------
@@ -169,10 +168,10 @@ class ChangelogUpdater:
                     if line.startswith("Package:"):
                         return line[len("Package:"):].strip()
         except FileNotFoundError:
-            print("Error: debian/control file not found.")
+            CRIT("Error: debian/control file not found.")
             exit(1)
 
-        print("Warning: Package information not found.")
+        WARN("Warning: Package information not found.")
         return "UnknownPackage"
 
     # --------------------
@@ -197,9 +196,9 @@ class ChangelogUpdater:
             with open(self.changelog_file, "w") as f:
                 f.write(changelog)
 
-            print("Changelog updated successfully!")
+            INFO("Changelog updated successfully!")
         else:
-            print("No update needed. Current version is up to date.")
+            INFO("No update needed. Current version is up to date.")
 
 # ---------------------------------------------------------------------------------------------------------
 # end of ChangelogUpdater
@@ -214,7 +213,6 @@ class ChangelogUpdater:
 class DockerImageManager:
     def __init__(self, configs, target, os_version, release_dir="release"):
         self.target = target.lower()
-
         self.os_version = os_version
         self.release_dir = os.path.join(configs.sdk_dir, release_dir)
         self.image_tag = f"deepx/{self.target}:ubuntu-{self.os_version}"
@@ -238,33 +236,45 @@ class DockerImageManager:
             CRIT(f"Invalid target {self.target}")
             sys.exit(1)
 
-        # execute 'Docker build'
+        # Execute Docker build command
         INFO(f"Building Docker image for {self.target} with Ubuntu version {self.os_version}...")
         build_command = f"sudo docker build {self.build_options_map[self.target]}"
         run_shell_command(build_command)
 
     def save_and_compress_docker_image(self):
-        """Save the Docker image as a tar file, compress it, and move it to the release directory"""
-        # move to release directory
+        """Save the Docker image as a compressed .tar.gz file"""
+        # Ensure release directory exists
         if not os.path.exists(self.release_dir):
             os.makedirs(self.release_dir)
 
-        # save Docker image
-        INFO(f"Saving Docker image {self.image_tag} to file {self.image_file}...")
-        save_command = f"sudo docker save -o {self.image_file} {self.image_tag}"
-        run_shell_command(save_command)
+        # Save Docker image and compress in one step
+        INFO(f"Saving Docker image {self.image_tag} and compressing to {self.compressed_file}...")
+        save_and_compress_command = f"sudo docker save {self.image_tag} | gzip > {self.compressed_file}"
+        run_shell_command(save_and_compress_command)
 
-        run_shell_command(f"sudo chmod 666 {self.image_file}")
+        # Change file permissions
+        run_shell_command(f"sudo chmod 666 {self.compressed_file}")
 
-        # compress
-        #INFO(f"Compressing image file {self.image_file} into {self.compressed_file}...")
-        #with open(self.image_file, 'rb') as f_in:
-        #    with tarfile.open(self.compressed_file, 'w:gz') as f_out:
-        #        tarinfo = tarfile.TarInfo(name=f"{self.image_file}")
-        #        f_out.add(self.image_file, arcname=f"{self.image_file}")
+        INFO(f"Docker image saved and compressed to {self.compressed_file}")
 
-        # remove origin
-        #os.remove(self.image_file)
+    def load_docker_image(self, image_file=None):
+        """Load an existing Docker image from a tar or gzipped tar file"""
+        if not image_file:
+            image_file = self.compressed_file  # Default to the compressed image file if none is specified
+
+        if not os.path.exists(image_file):
+            WARN(f"Image file {image_file} does not exist. Please verify the file path.")
+            return  # Exit the function if the file doesn't exist
+
+        # If the file is a gzipped tar, decompress it and pipe into docker load
+        if image_file.endswith('.gz'):
+            INFO(f"Loading Docker image from compressed file {image_file}...")
+            load_command = f"gunzip -c {image_file} | sudo docker load"
+        else:
+            INFO(f"Loading Docker image from tar file {image_file}...")
+            load_command = f"sudo docker load -i {image_file}"
+
+        run_shell_command(load_command)
 
 # ---------------------------------------------------------------------------------------------------------
 # end of ChangelogUpdater
@@ -399,7 +409,7 @@ def copy_latest_deb_file(pattern, target_dir):
     # find latest .deb
     files = glob.glob(pattern)
     if not files:
-        print("No .deb files found.")
+        WARN("No .deb files found.")
         return None
 
     latest_file = max(files, key=os.path.getctime)
@@ -567,7 +577,7 @@ def main():
     parser.add_argument('--package', action='append', choices=['firmware', 'runtime', 'driver', 'app', 'rt', 'all', 'validation'],
             help='Packages to build (can be specified multiple times)')
     parser.add_argument('--board', type=str, default='mdot2', help='Board type (default: mdot2)')
-    parser.add_argument('--action', action='append', choices=['download', 'build', 'post', 'release', 'all'],
+    parser.add_argument('--action', action='append', choices=['download', 'build', 'post', 'release', 'loadimg', 'all'],
             help='action with package (can be specified multiple times)')
     parser.add_argument('--docker', action='store_true', help='Install Docker if not installed')
 
@@ -582,7 +592,6 @@ def main():
         args.action = ['all']
     actions = args.action
 
-    global sdk_dir
     sdk_dir = os.path.join(set_project_home(args.sdk_home), "dxnn_sdk")
     if os.environ.get('DXNN_SDK_HOME'):
         sdk_dir = os.environ.get('DXNN_SDK_HOME')
@@ -600,6 +609,13 @@ def main():
 
 
     configs = BuildConfig(packages, args.board, sdk_dir, firmware_dir, runtime_dir, driver_dir, app_dir, validation_dir, docker_dir)
+    create_env_script(configs)
+
+
+    target = "DXRT"
+    os_version = "24.04"
+
+    docker_manager = DockerImageManager(configs, target, os_version)
 
     if "download" in actions or "all" in actions:
         download_packages(configs)
@@ -610,15 +626,12 @@ def main():
         if args.docker:
             install_docker()
             prepare_docker_recipes(configs)
-        create_env_script(configs)
     if "release" in actions:
-        target = "DXRT"
-        os_version = "24.04"
-
-        docker_manager = DockerImageManager(configs, target, os_version)
         docker_manager.build_docker_image()
 
         docker_manager.save_and_compress_docker_image()
+    if "loadimg" in actions:
+        docker_manager.load_docker_image()
 
     DONE("Done.")
 

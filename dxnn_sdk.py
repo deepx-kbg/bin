@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (C) 2024  DeepX Co., Ltd.
 
-# DXNN SDK Build Tool / v0.4 2024-11-11
+# DXNN SDK Build Tool / v0.5 2024-11-14
 # Author : KOO Bongyu <kbg@deepx.ai>
 
 import os
@@ -226,8 +226,13 @@ class DockerImageManager:
         }
 
         self.build_options_map = {
-            "dxnn": f"--build-arg UBUNTU_VERSION={self.os_version} -f {self.dockerfile_map['dxnn']} -t {self.image_tag} {configs.docker_dir}",
-            "dxrt": f"--build-arg UBUNTU_VERSION={self.os_version} -f {self.dockerfile_map['dxrt']} -t {self.image_tag} {configs.docker_dir}"
+            # basic
+            # "dxnn": f"--build-arg UBUNTU_VERSION={self.os_version} -f {self.dockerfile_map['dxnn']} -t {self.image_tag} {configs.docker_dir}",
+            # "dxrt": f"--build-arg UBUNTU_VERSION={self.os_version} -f {self.dockerfile_map['dxrt']} -t {self.image_tag} {configs.docker_dir}"
+
+            # buildX
+            "dxnn": f"--platform linux/amd64,linux/arm64 --build-arg UBUNTU_VERSION={self.os_version} -f {self.dockerfile_map['dxnn']} -t {self.image_tag} {configs.docker_dir}",
+            "dxrt": f"--platform linux/amd64,linux/arm64 --build-arg UBUNTU_VERSION={self.os_version} -f {self.dockerfile_map['dxrt']} -t {self.image_tag} {configs.docker_dir}"
         }
 
     def build_docker_image(self):
@@ -238,7 +243,15 @@ class DockerImageManager:
 
         # Execute Docker build command
         INFO(f"Building Docker image for {self.target} with Ubuntu version {self.os_version}...")
-        build_command = f"sudo docker build {self.build_options_map[self.target]}"
+
+        # basic
+        # build_command = f"sudo docker build {self.build_options_map[self.target]}"
+
+        # buildX
+        build_command = "docker buildx create --use --driver docker-container"
+        run_shell_command(build_command)
+        build_command = f"docker buildx build {self.build_options_map[self.target]}"
+        #DEBUG(build_command)
         run_shell_command(build_command)
 
     def save_and_compress_docker_image(self):
